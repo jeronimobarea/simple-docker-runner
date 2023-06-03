@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  build:
+    container_name: simple_docker_runner_build
+    build:
+      target: build
+      context: .
+
+  docker:
+    container_name: simple_docker_runner
+    build:
+      target: docker
+      context: .
+    restart: always
+    depends_on:
+      - official_docker
+    ports:
+      - "3000:3000"
+    networks:
+      - dockernet
+    environment:
+      DOCKER_HOST: tcp://localhost:2377
+    volumes:
+      - .:/docker
+
+  official_docker:
+    container_name: official_docker
+    image: docker
+    privileged: true
+    restart: always
+    ports:
+      - "2376:2377"
+    networks:
+      - dockernet
+
+networks:
+  dockernet:
