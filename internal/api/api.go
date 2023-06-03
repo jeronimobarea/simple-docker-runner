@@ -2,7 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/docker/docker/client"
 	"github.com/go-chi/chi/v5"
@@ -14,9 +17,30 @@ import (
 	"github.com/jeronimobarea/simple-docker-runner/internal/pkg/env"
 )
 
-var serverPort string
+var (
+	serverPort          string
+	allowedDockerImages []string
+)
 
 func init() {
+	allowedDockerImagesFilePath := os.Getenv("ALLOWED_DOCKER_IMAGES")
+	if allowedDockerImagesFilePath != "" {
+		if !strings.HasSuffix(allowedDockerImagesFilePath, ".json") {
+			panic("file has to be a .json file")
+		}
+		allowedDockerImagesFile, err := os.Open(allowedDockerImagesFilePath)
+		if err != nil {
+			panic(err)
+		}
+		defer allowedDockerImagesFile.Close()
+
+		decoder := json.NewDecoder(allowedDockerImagesFile)
+		err = decoder.Decode(&allowedDockerImages)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	serverPort = env.GetEnvWithFallback("SERVER_PORT", ":3000")
 }
 
@@ -33,7 +57,7 @@ func Run(_ context.Context) {
 	var dockerSvc docker.Service
 	{
 		dockerRunner := docker.NewDockerRunner(dockerCli)
-		dockerSvc = docker.NewService(dockerRunner)
+		dockerSvc = docker.NewService(dockerRunner, allowedDockerImages...)
 	}
 
 	var router *chi.Mux

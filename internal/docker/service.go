@@ -6,19 +6,20 @@ import (
 
 //go:generate mockgen -destination=../test/dockertest/mocks/mock_service.go -package=mocks . Service
 type Service interface {
-	Run(ctx context.Context, cmd RunCMD) ([]byte, error)
+	Run(ctx context.Context, cmd RunCMD) (*RunnerResponse, error)
 }
 
 type service struct {
-	runner DockerRunner
+	runner              DockerRunner
+	allowedDockerImages []string
 }
 
-func NewService(runner DockerRunner) *service {
-	return &service{runner}
+func NewService(runner DockerRunner, allowedDockerImages ...string) *service {
+	return &service{runner, allowedDockerImages}
 }
 
-func (svc service) Run(ctx context.Context, cmd RunCMD) ([]byte, error) {
-	if err := cmd.Validate(); err != nil {
+func (svc service) Run(ctx context.Context, cmd RunCMD) (*RunnerResponse, error) {
+	if err := cmd.Validate(svc.allowedDockerImages...); err != nil {
 		return nil, err
 	}
 

@@ -26,12 +26,13 @@ func (h *handler) Run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := h.dockerSvc.Run(ctx, cmd)
+	runnerResponse, err := h.dockerSvc.Run(ctx, cmd)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(output)
+	json.NewEncoder(w).Encode(runnerResponse)
 }

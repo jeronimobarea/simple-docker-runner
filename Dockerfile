@@ -11,5 +11,6 @@ RUN go install -v ./cmd/...
 FROM alpine:latest as docker
 
 WORKDIR /app
+COPY allowed_images.json ./
 COPY --from=build /go/bin/docker docker
 CMD ["./docker"]

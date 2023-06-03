@@ -13,26 +13,11 @@ services:
       target: docker
       context: .
     restart: always
-    depends_on:
-      - official_docker
     ports:
       - "3000:3000"
-    networks:
-      - dockernet
     environment:
-      DOCKER_HOST: tcp://localhost:2377
+      DOCKER_API_VERSION: 1.42
+      ALLOWED_DOCKER_IMAGES: ${ALLOWED_DOCKER_IMAGES}
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - .:/docker
-
-  official_docker:
-    container_name: official_docker
-    image: docker
-    privileged: true
-    restart: always
-    ports:
-      - "2376:2377"
-    networks:
-      - dockernet
-
-networks:
-  dockernet:

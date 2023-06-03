@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -12,9 +13,13 @@ import (
 
 var ErrContainerStop = errors.New("error stoping container")
 
+type RunnerResponse struct {
+	Output []string `json:"output"`
+}
+
 //go:generate mockgen -destination=../test/dockertest/mocks/mock_runner.go -package=mocks . DockerRunner
 type DockerRunner interface {
-	Run(ctx context.Context, dockerImage, containerName string, cmd []string, config *container.Config, hostConfig *container.HostConfig, persist bool) ([]byte, error)
+	Run(ctx context.Context, dockerImage, containerName string, cmd []string, config *container.Config, hostConfig *container.HostConfig, persist bool) (*RunnerResponse, error)
 }
 
 type dockerRunner struct {
@@ -33,7 +38,7 @@ func (d dockerRunner) Run(
 	config *container.Config,
 	hostConfig *container.HostConfig,
 	persist bool,
-) ([]byte, error) {
+) (*RunnerResponse, error) {
 	containerID, err := d.checkContainerExists(ctx, containerName)
 	if err != nil {
 		return nil, err
@@ -98,16 +103,39 @@ func (d dockerRunner) stopContainer(ctx context.Context, containerID string) err
 	return nil
 }
 
-func (d dockerRunner) getContainerOutput(ctx context.Context, containerID string) ([]byte, error) {
-	logs, err := d.cli.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{ShowStdout: true})
+func (d dockerRunner) getContainerOutput(ctx context.Context, containerID string) (*RunnerResponse, error) {
+	logs, err := d.cli.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Details: true})
 	if err != nil {
 		return nil, err
 	}
 	defer logs.Close()
 
-	var output []byte
-	logs.Read(output)
-	return output, nil
+	var output []string
+	scanner := bufio.NewScanner(logs)
+	for scanner.Scan() {
+		line := cleanLogLine(scanner.Bytes())
+		output = append(output, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return &RunnerResponse{
+		Output: output,
+	}, nil
+}
+
+// We want to clean the type and size info that comes from the logs
+// From the Docker library:
+// [8]byte{STREAM_TYPE, 0, 0, 0, SIZE1, SIZE2, SIZE3, SIZE4}[]byte{OUTPUT}
+//
+// STREAM_TYPE can be 1 for stdout and 2 for stderr
+//
+// SIZE1, SIZE2, SIZE3, and SIZE4 are four bytes of uint32 encoded as big endian.
+// This is the size of OUTPUT.
+func cleanLogLine(line []byte) string {
+	return string(line[9:])
 }
 
 func (d dockerRunner) checkContainerExists(ctx context.Context, containerName string) (string, error) {
