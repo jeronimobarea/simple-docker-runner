@@ -10,16 +10,16 @@ type Service interface {
 }
 
 type service struct {
-	runner              DockerRunner
-	allowedDockerImages []string
+	runner                  DockerRunner
+	whiteListedDockerImages []string
 }
 
-func NewService(runner DockerRunner, allowedDockerImages ...string) *service {
-	return &service{runner, allowedDockerImages}
+func NewService(runner DockerRunner, whiteListedDockerImages ...string) *service {
+	return &service{runner, whiteListedDockerImages}
 }
 
 func (svc service) Run(ctx context.Context, cmd RunCMD) (*RunnerResponse, error) {
-	if err := cmd.Validate(svc.allowedDockerImages...); err != nil {
+	if err := cmd.Validate(svc.whiteListedDockerImages...); err != nil {
 		return nil, err
 	}
 
@@ -29,7 +29,6 @@ func (svc service) Run(ctx context.Context, cmd RunCMD) (*RunnerResponse, error)
 		cmd.ContainerName,
 		cmd.Cmd,
 		cmd.ContainerConfig(),
-		cmd.HostConfig(),
 		cmd.Persist,
 	)
 }

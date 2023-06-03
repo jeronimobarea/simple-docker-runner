@@ -12,22 +12,19 @@ type RunCMD struct {
 	DockerImage   string   `validate:"required" json:"docker_image"`
 	ContainerName string   `validate:"required" json:"container_name"`
 	Cmd           []string `json:"cmd"`
-
-	//HostIP   string `validate:"required" json:"host_ip"`
-	//HostPort string `validate:"required" json:"host_port"`
-
-	Persist bool `json:"persist"`
+	Persist       bool     `json:"persist"`
 }
 
-func (cmd RunCMD) Validate(allowedDockerImages ...string) error {
+func (cmd RunCMD) Validate(whiteListedDockerImages ...string) error {
 	err := validator.New().Struct(cmd)
 	if err != nil {
 		return err
 	}
-	if len(allowedDockerImages) == 0 {
+	if len(whiteListedDockerImages) == 0 {
 		return nil
 	}
-	for _, allowed := range allowedDockerImages {
+
+	for _, allowed := range whiteListedDockerImages {
 		if allowed == cmd.DockerImage {
 			return nil
 		}
@@ -40,8 +37,4 @@ func (cmd RunCMD) ContainerConfig() *container.Config {
 		Image: cmd.DockerImage,
 		Cmd:   cmd.Cmd,
 	}
-}
-
-func (cmd RunCMD) HostConfig() *container.HostConfig {
-	return &container.HostConfig{}
 }

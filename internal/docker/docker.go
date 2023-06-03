@@ -19,7 +19,7 @@ type RunnerResponse struct {
 
 //go:generate mockgen -destination=../test/dockertest/mocks/mock_runner.go -package=mocks . DockerRunner
 type DockerRunner interface {
-	Run(ctx context.Context, dockerImage, containerName string, cmd []string, config *container.Config, hostConfig *container.HostConfig, persist bool) (*RunnerResponse, error)
+	Run(ctx context.Context, dockerImage, containerName string, cmd []string, config *container.Config, persist bool) (*RunnerResponse, error)
 }
 
 type dockerRunner struct {
@@ -36,7 +36,6 @@ func (d dockerRunner) Run(
 	containerName string,
 	cmd []string,
 	config *container.Config,
-	hostConfig *container.HostConfig,
 	persist bool,
 ) (*RunnerResponse, error) {
 	containerID, err := d.checkContainerExists(ctx, containerName)
@@ -44,7 +43,7 @@ func (d dockerRunner) Run(
 		return nil, err
 	}
 	if containerID == "" {
-		containerID, err = d.createContainer(ctx, dockerImage, config, hostConfig, containerName)
+		containerID, err = d.createContainer(ctx, dockerImage, config, nil, containerName)
 		if err != nil {
 			return nil, err
 		}
@@ -135,6 +134,9 @@ func (d dockerRunner) getContainerOutput(ctx context.Context, containerID string
 // SIZE1, SIZE2, SIZE3, and SIZE4 are four bytes of uint32 encoded as big endian.
 // This is the size of OUTPUT.
 func cleanLogLine(line []byte) string {
+	if len(line) < 8 {
+		return string(line)
+	}
 	return string(line[9:])
 }
 

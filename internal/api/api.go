@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -18,27 +19,14 @@ import (
 )
 
 var (
-	serverPort          string
-	allowedDockerImages []string
+	serverPort              string
+	whiteListedDockerImages []string
 )
 
 func init() {
-	allowedDockerImagesFilePath := os.Getenv("ALLOWED_DOCKER_IMAGES")
-	if allowedDockerImagesFilePath != "" {
-		if !strings.HasSuffix(allowedDockerImagesFilePath, ".json") {
-			panic("file has to be a .json file")
-		}
-		allowedDockerImagesFile, err := os.Open(allowedDockerImagesFilePath)
-		if err != nil {
-			panic(err)
-		}
-		defer allowedDockerImagesFile.Close()
-
-		decoder := json.NewDecoder(allowedDockerImagesFile)
-		err = decoder.Decode(&allowedDockerImages)
-		if err != nil {
-			panic(err)
-		}
+	whitelistedDockerImagesFilePath := os.Getenv("WHITELISTED_DOCKER_IMAGES")
+	if whitelistedDockerImagesFilePath != "" {
+		loadWhitelistedDockerImages(whitelistedDockerImagesFilePath)
 	}
 
 	serverPort = env.GetEnvWithFallback("SERVER_PORT", ":3000")
@@ -57,7 +45,7 @@ func Run(_ context.Context) {
 	var dockerSvc docker.Service
 	{
 		dockerRunner := docker.NewDockerRunner(dockerCli)
-		dockerSvc = docker.NewService(dockerRunner, allowedDockerImages...)
+		dockerSvc = docker.NewService(dockerRunner, whiteListedDockerImages...)
 	}
 
 	var router *chi.Mux
@@ -73,4 +61,21 @@ func Run(_ context.Context) {
 	}
 
 	http.ListenAndServe(serverPort, router)
+}
+
+func loadWhitelistedDockerImages(filePath string) {
+	if !strings.HasSuffix(filePath, ".json") {
+		panic(fmt.Errorf("file has to be a .json file: %s", filePath))
+	}
+	file, err := os.Open(filePath)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&whiteListedDockerImages)
+	if err != nil {
+		panic(err)
+	}
 }

@@ -37,16 +37,16 @@ func (m *MockDockerRunner) EXPECT() *MockDockerRunnerMockRecorder {
 }
 
 // Run mocks base method.
-func (m *MockDockerRunner) Run(arg0 context.Context, arg1, arg2 string, arg3 []string, arg4 *container.Config, arg5 *container.HostConfig, arg6 bool) (*docker.RunnerResponse, error) {
+func (m *MockDockerRunner) Run(arg0 context.Context, arg1, arg2 string, arg3 []string, arg4 *container.Config, arg5 bool) (*docker.RunnerResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	ret := m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(*docker.RunnerResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockDockerRunnerMockRecorder) Run(arg0, arg1, arg2, arg3, arg4, arg5, arg6 interface{}) *gomock.Call {
+func (mr *MockDockerRunnerMockRecorder) Run(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockDockerRunner)(nil).Run), arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockDockerRunner)(nil).Run), arg0, arg1, arg2, arg3, arg4, arg5)
 }
